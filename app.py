@@ -43,7 +43,16 @@ def main():
     All the Streamlit elements are defined here.
     """
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if torch.cuda.is_available():
+        device = "cuda"
+    # elif torch.backends.mps.is_available(): # ! pytorch-nightly required for using mps
+    #     device = "mps"
+    else:
+        device = "cpu"
+
+    if "site_reloads" not in st.session_state:
+        st.session_state.site_reloads = 0
+    st.session_state.site_reloads += 1
 
     if "text" not in st.session_state:
         st.session_state.text = (
@@ -59,38 +68,40 @@ def main():
     st.title("Writing Assistant")
 
     # The sidebar
+
     with st.sidebar:
-        st.write("## Transformation Settings")
+        if device == "cuda":
+            st.write("## Transformation Settings")
 
-        task = st.selectbox(
-            "Task",
-            options=[
-                "paraphrase",
-                "coherent",
-                "simpler",
-                "grammar",
-                "formal",
-                "neutral",
-            ],
-            on_change=give_suggestions,
-            args=(False,),
-        )
+            task = st.selectbox(
+                "Task",
+                options=[
+                    "paraphrase",
+                    "coherent",
+                    "simpler",
+                    "grammar",
+                    "formal",
+                    "neutral",
+                ],
+                on_change=give_suggestions,
+                args=(False,),
+            )
 
-        decoding_strategy_processing = st.selectbox(
-            "Decoding Strategy",
-            ["stochastic", "greedy"],
-            on_change=give_suggestions,
-            args=(False,),
-        )
+            decoding_strategy_processing = st.selectbox(
+                "Decoding Strategy",
+                ["stochastic", "greedy"],
+                on_change=give_suggestions,
+                args=(False,),
+            )
 
-        max_length_processing = st.slider(
-            "Max sentence length",
-            50,
-            500,
-            200,
-            on_change=give_suggestions,
-            args=(False,),
-        )
+            max_length_processing = st.slider(
+                "Max sentence length",
+                50,
+                500,
+                200,
+                on_change=give_suggestions,
+                args=(False,),
+            )
 
         st.write("## Token Suggestions Settings")
 
@@ -125,33 +136,41 @@ def main():
             placeholder="Type something...",
         )
 
-        st.write(f"Apply the transformation: :green[**{task.capitalize()}**]")
+        if device == "cuda":
+            st.write(f"Apply the transformation: :green[**{task.capitalize()}**]")
 
-        if st.button("Transform"):
-            with st.status("Transforming...", state="running") as status:
-                st.write(":orange[**Thinking...**]")
-                processed_text = fix_sentence(
-                    task=task,
-                    input_text=user_input,
-                    decoding_strategy=decoding_strategy_processing,
-                    max_length=max_length_processing,
-                    device=device,
-                    low_memory_setting=True,
+            if st.button("Transform"):
+                with st.status("Transforming...", state="running") as status:
+                    st.write(":orange[**Thinking...**]")
+                    processed_text = fix_sentence(
+                        task=task,
+                        input_text=user_input,
+                        decoding_strategy=decoding_strategy_processing,
+                        max_length=max_length_processing,
+                        device=device,
+                        low_memory_setting=True,
+                    )
+                    st.write(":green[**Transformation completed!**]")
+                # st.write(processed_text)
+                processed_text = re.sub(
+                    r"generated.\s?", "", processed_text, flags=re.I
                 )
-                st.write(":green[**Transformation completed!**]")
-            # st.write(processed_text)
-            processed_text = re.sub(r"generated.\s?", "", processed_text, flags=re.I)
-            if processed_text:
-                status.update(label=":green[**Success!**]", state="complete")
-                st.write_stream(stream_data(processed_text))
-                st.session_state.suggest_token = False
-                st.button(
-                    "Replace text",
-                    on_click=update_text,
-                    args=(processed_text,),
-                )
-            else:
-                status.update(label=":orange[**No suggestions!**]", state="complete")
+                if processed_text:
+                    status.update(label=":green[**Success!**]", state="complete")
+                    st.write_stream(stream_data(processed_text))
+                    st.session_state.suggest_token = False
+                    st.button(
+                        "Replace text",
+                        on_click=update_text,
+                        args=(processed_text,),
+                    )
+                else:
+                    status.update(
+                        label=":orange[**No suggestions!**]", state="complete"
+                    )
+        else:
+            if st.session_state.site_reloads == 1:
+                st.error("Use a GPU for more features!")
 
     with col2:
         st.caption("**Token Suggestions**")
