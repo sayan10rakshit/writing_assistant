@@ -131,7 +131,7 @@ def main():
     with col1:
         user_input = st.text_area(
             "**Enter your text here:**",
-            key="text",
+            key="text", # This will fetch the value of key "text" from the dict st.session_state
             on_change=give_suggestions,
             placeholder="Type something...",
         )
