@@ -28,8 +28,8 @@ This web application empowers you to elevate the quality of your written work by
 
 ## Model Architecture
 
-- **GPT-2**: The GPT-2 decoder only model, a pre-trained powerhouse for text generation, to offer insightful suggestions.
-- **T5**: Utilizes a T5 encoder-decoder model, pre-trained and further finetuned on the Coedit dataset, for exceptional text correction capabilities.
+- **GPT-2**: The GPT-2 pre-trained decoder only model, a powerhouse for text generation, to offer insightful suggestions.
+- **T5**: The T5 encoder-decoder model, pre-trained and further finetuned on the Coedit dataset, for exceptional text correction capabilities.
 
 ## Getting Started
 
